@@ -79,6 +79,40 @@ class Label:
         text_surface = self.font.render(self.text, True, self.color)
         self.screen.blit(text_surface, (self.x, self.y))
 
+class WrappedLabel:
+    def __init__(self, screen,  x, y, w, h, text, font, size, color):
+        self.screen = screen
+        self.rect = pygame.Rect(x,y,w,h)
+        self.text = text
+        self.font = pygame.font.Font(font, size)
+        self.color = color
+
+    def draw(self): # Wrapping logic are mainly taken from https://www.pygame.org/wiki/TextWrap
+        text = self.text
+        rect = self.rect
+        y = rect.top
+        lineSpacing = -2
+        fontHeight = self.font.size("Tg")[1]
+
+        while text:
+            i = 1
+            # determine if the row of text will be outside our area
+            if y + fontHeight>rect.bottom:
+                break
+            # determine maximum width of line
+            while self.font.size(text[:i])[0]<rect.width and i<len(text):
+                i += 1
+            # if we've wrapped the text, then adjust the wrap to the last word
+            if i<len(text):
+                i = text.rfind(" ", 0, i) + 1
+            # render the line and blit it to the surface
+            image = self.font.render(text[:i], True, self.color)
+
+            self.screen.blit(image, (rect.left, y))
+            y += fontHeight + lineSpacing
+            # remove the text we just blitted
+            text = text[i:]
+
 class MyRectangle:
     def __init__(self, screen, x, y, width, height, color_text, color_r, text, font, size):
         self.screen = screen
@@ -334,18 +368,11 @@ class Scenes(Programm): # основной класс реализующий г�
         name = text[0]
         words = text[1]
         
-        count = 0
-        for i in range(len(words)):
-            if count == 112:
-                words = words[:i] + "\n" + words[i:]
-                count = 0
-            count += 1
-
         if name == "Рассказчик":
             self.SCREEN.blit(textFrame, (100, self._HEIGHT-350))
             self.SCREEN.blit(divUp, (self._WIDTH//2-200, self._HEIGHT-330))
             self.SCREEN.blit(divDown, (self._WIDTH//2-200, self._HEIGHT-75))
-            label_text = Label(self.SCREEN, 190, self._HEIGHT-270, words, self._FONT, 26, self._color_font)
+            label_text = WrappedLabel(self.SCREEN, 190, self._HEIGHT-270, textFrame.get_width()-180, textFrame.get_height(), words, self._FONT, 26, self._color_font)
             label_text.draw()
         else:
             if self.sprites.getSprite(name) != None:
@@ -359,7 +386,7 @@ class Scenes(Programm): # основной класс реализующий г�
         
             label_name = Label(self.SCREEN, 180, self._HEIGHT//2+200, name, self._FONT, 35, self._color_font)
             label_name.draw()
-            label_text = Label(self.SCREEN, 190, self._HEIGHT-260, words, self._FONT, 26, self._color_font)
+            label_text = WrappedLabel(self.SCREEN, 190, self._HEIGHT-260, textFrame.get_width()-90, textFrame.get_height(), words, self._FONT, 26, self._color_font)
             label_text.draw()
 
         run = True
